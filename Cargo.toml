@@ -43,3 +43,8 @@ regex = "1.10"
 [[bench]]
 name = "bench"
 harness = false
+
+
+[lib]
+name="fancy_regex"
+crate-type=["cdylib"]

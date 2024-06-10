@@ -1566,6 +1566,63 @@ pub fn detect_possible_backref(re: &str) -> bool {
     }
 }
 */
+/// dsfasd
+use std::ffi;
+#[no_mangle]
+/// adsf
+pub extern "C" fn get_regex(pattern: *const ffi::c_char) -> *const Regex {
+    let pattern = unsafe { ffi::CStr::from_ptr(pattern).to_str().unwrap() };
+    let re = Regex::new(pattern).unwrap();
+    let b = Box::new(re);
+    Box::into_raw(b)
+}
+
+/// asdf
+pub extern "C" fn free_regex(re: *mut Regex) {
+    if !re.is_null() {
+        unsafe {
+            _ = Box::from_raw(re);
+        }
+    };
+}
+
+/// Free Matches
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct MatchIndex {
+    position: usize,
+    length: usize,
+}
+
+#[no_mangle]
+/// asdf
+pub extern "C" fn get_matches<'r, 't>(
+    ext_regex: *const Regex,
+    ext_text: *const ffi::c_char,
+) -> *mut Matches<'r, 't> {
+    let regex: &'r Regex;
+    let text: &'t str;
+    unsafe {
+        regex = ext_regex.as_ref().unwrap();
+        text = ffi::CStr::from_ptr(ext_text).to_str().unwrap();
+    };
+    Box::into_raw(Box::new(regex.find_iter(text)))
+}
+
+#[no_mangle]
+/// asdf
+pub extern "C" fn next<'r, 't>(matches: *mut Matches<'r, 't>, element: *mut MatchIndex) -> bool {
+    let mut _matches = unsafe { matches.as_mut().unwrap() };
+    if let Some(x) = _matches.next() {
+        let _x = x.unwrap();
+        let _element = unsafe { element.as_mut().unwrap() };
+        _element.position = _x.start();
+        _element.length = _x.end();
+        return true;
+    }
+    return false;
+}
 
 /// The internal module only exists so that the toy example can access internals for debugging and
 /// experimenting.
