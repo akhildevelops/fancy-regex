@@ -157,7 +157,6 @@ Conditionals - if/then/else:
 */
 
 #![doc(html_root_url = "https://docs.rs/fancy-regex/0.13.0")]
-#![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -241,6 +240,7 @@ pub struct Match<'t> {
 ///
 /// `'r` is the lifetime of the compiled regular expression and `'t` is the
 /// lifetime of the matched string.
+
 #[derive(Debug)]
 pub struct Matches<'r, 't> {
     re: &'r Regex,
@@ -482,6 +482,38 @@ impl FromStr for Regex {
     fn from_str(s: &str) -> Result<Regex> {
         Regex::new(s)
     }
+}
+use std::ffi::CStr;
+
+pub extern "C" fn get_regex(re: *const i8) -> *const Regex {
+    let c_str = unsafe { CStr::from_ptr(re) };
+    let rust_str = c_str.to_str().expect("Invalid UTF-8");
+    let r = Box::new(Regex::new(rust_str).unwrap());
+    Box::into_raw(r)
+}
+pub extern "C" fn get_matches(
+    regex: *const Regex,
+    data: *const i8,
+) -> *const Matches<'static, 'static> {
+    let c_str = unsafe { CStr::from_ptr(data) };
+    let rust_str = c_str.to_str().expect("Invalid UTF-8");
+    let reg_ref = unsafe { regex.as_ref() }.unwrap();
+    let r = Box::new(reg_ref.find_iter(rust_str));
+    Box::into_raw(r)
+}
+
+#[repr(C)]
+struct MatchIndex {}
+
+pub extern "C" fn next(
+    matches: *const Matches<'static, 'static>,
+    data: *const i8,
+) -> *const Matches<'static, 'static> {
+    let c_str = unsafe { CStr::from_ptr(data) };
+    let rust_str = c_str.to_str().expect("Invalid UTF-8");
+    let reg_ref = unsafe { regex.as_ref() }.unwrap();
+    let r = Box::new(reg_ref.find_iter(rust_str));
+    Box::into_raw(r)
 }
 
 impl Regex {
