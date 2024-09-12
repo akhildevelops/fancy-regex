@@ -13,6 +13,9 @@ categories = ["text-processing"]
 exclude = ["/.github/*", "/Cargo.lock.msrv"]
 rust-version = "1.66"
 
+[lib]
+crate-type = ["cdylib"]
+
 [features]
 default = ["unicode", "perf", "std"]
 # Enable #[track_caller] in unit tests.

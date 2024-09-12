@@ -4,9 +4,10 @@ void *get_matches(void *regex, char *data);
 
 typedef struct matchIndex
 {
-    unsigned long position;
-    unsigned long length;
+
+    unsigned long long start;
+    unsigned long long end;
 
 } MatchIndex;
 
-int next(void *matches, MatchIndex *match_dim);
+MatchIndex *next(void *matches);

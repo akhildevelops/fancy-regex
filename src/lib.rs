@@ -157,7 +157,7 @@ Conditionals - if/then/else:
 */
 
 #![doc(html_root_url = "https://docs.rs/fancy-regex/0.13.0")]
-#![deny(missing_debug_implementations)]
+// #![deny(missing_debug_implementations)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
@@ -226,6 +226,7 @@ enum RegexImpl {
 }
 
 /// A single match of a regex or group in an input text
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Match<'t> {
     text: &'t str,
@@ -485,12 +486,15 @@ impl FromStr for Regex {
 }
 use std::ffi::CStr;
 
+#[no_mangle]
 pub extern "C" fn get_regex(re: *const i8) -> *const Regex {
     let c_str = unsafe { CStr::from_ptr(re) };
     let rust_str = c_str.to_str().expect("Invalid UTF-8");
     let r = Box::new(Regex::new(rust_str).unwrap());
     Box::into_raw(r)
 }
+
+#[no_mangle]
 pub extern "C" fn get_matches(
     regex: *const Regex,
     data: *const i8,
@@ -503,17 +507,25 @@ pub extern "C" fn get_matches(
 }
 
 #[repr(C)]
-struct MatchIndex {}
+pub struct MatchIndex {
+    start: usize,
+    end: usize,
+}
 
-pub extern "C" fn next(
-    matches: *const Matches<'static, 'static>,
-    data: *const i8,
-) -> *const Matches<'static, 'static> {
-    let c_str = unsafe { CStr::from_ptr(data) };
-    let rust_str = c_str.to_str().expect("Invalid UTF-8");
-    let reg_ref = unsafe { regex.as_ref() }.unwrap();
-    let r = Box::new(reg_ref.find_iter(rust_str));
-    Box::into_raw(r)
+#[no_mangle]
+pub extern "C" fn next(matches: *mut Matches<'static, 'static>) -> *const MatchIndex {
+    let m = unsafe { matches.as_mut() }.unwrap();
+    if let Some(mat_some) = m.next() {
+        if let Ok(mat) = mat_some {
+            return Box::into_raw(Box::new(MatchIndex {
+                start: mat.start,
+                end: mat.end,
+            }));
+        }
+    };
+    return std::ptr::null();
+
+    // Box::into_raw(Box::new(m.next().unwrap().unwrap()))
 }
 
 impl Regex {
